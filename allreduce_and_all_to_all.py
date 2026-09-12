@@ -102,6 +102,9 @@ def main() -> int:
     dist.barrier(device_ids=[local_rank])
     dtype = parse_dtype(args.dtype)
 
+    all2all_elapsed_ms = None
+    allreduce_elapsed_ms = None
+
     if args.mode == "tp_ep":
         ep_size = args.ep_size
         tp_size = args.tp_size
@@ -148,6 +151,7 @@ def main() -> int:
         torch.cuda.synchronize(device)
         elapsed_ms = start.elapsed_time(end) / args.iterations
         print(f"rank={rank} all2all_ms={elapsed_ms:.3f}")
+        all2all_elapsed_ms = elapsed_ms
 
     if args.mode in ("allreduce", "both", "tp_ep"):
         allreduce_tensor = torch.randn(chunk_shape, device=device, dtype=torch.float32).to(dtype)
@@ -171,6 +175,7 @@ def main() -> int:
         torch.cuda.synchronize(device)
         elapsed_ms = start.elapsed_time(end) / args.iterations
         print(f"rank={rank} allreduce_ms={elapsed_ms:.3f}")
+        allreduce_elapsed_ms = elapsed_ms
 
     report = {
         "device": device.type,
@@ -184,6 +189,8 @@ def main() -> int:
             device=device,
         ).element_size(),
         "dtype": args.dtype,
+        "all2all_ms": all2all_elapsed_ms,
+        "allreduce_ms": allreduce_elapsed_ms,
         "config": {
             "hidden_size": args.hidden_size,
             "intermediate_size": args.intermediate_size,

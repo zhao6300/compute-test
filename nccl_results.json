@@ -1,0 +1,49 @@
+{
+  "configuration": {
+    "gpus": 4,
+    "rank_zero_only": true,
+    "dtype": "bf16",
+    "mode": "all2all_and_allreduce",
+    "warmup": 2,
+    "iterations": 4,
+    "source": "allreduce_and_all_to_all.py"
+  },
+  "runs": [
+    {
+      "tokens": 8192,
+      "product": 2304,
+      "all2all_ms": 0.302,
+      "allreduce_ms": 0.182
+    },
+    {
+      "tokens": 8192,
+      "product": 5120,
+      "all2all_ms": 0.648,
+      "allreduce_ms": 0.310
+    },
+    {
+      "tokens": 32768,
+      "product": 2304,
+      "all2all_ms": 1.181,
+      "allreduce_ms": 0.477
+    },
+    {
+      "tokens": 32768,
+      "product": 5120,
+      "all2all_ms": 2.570,
+      "allreduce_ms": 1.202
+    },
+    {
+      "tokens": 131072,
+      "product": 2304,
+      "all2all_ms": 4.601,
+      "allreduce_ms": 2.239
+    },
+    {
+      "tokens": 131072,
+      "product": 5120,
+      "all2all_ms": 10.281,
+      "allreduce_ms": 4.775
+    }
+  ]
+}
