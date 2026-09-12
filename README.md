@@ -102,6 +102,10 @@ timeout 120 env NCCL_COMM_ID=127.0.0.1:19810 \
 make
 ```
 
+## 多尺寸 NCCL 基线
+
+当前 `nccl_results.json` 记录了 4 张本地卡、BF16 下分别按 `8192/32768/131072 tokens × 2304/5120 features` 测出的 `all2all` 与 `allreduce` 时间。`all2all` 在测量范围内大致稳定在约 `1.0 GB/s` 的等效带宽，`allreduce` 约 `2.2 GB/s` 的等效带宽。
+
 ## 说明
 
 仓库中的“模拟”主要用于估算形状、MAC/FLOPs 与 kernel 实现，不是完整 MoE 推理路径：

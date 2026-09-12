@@ -12,37 +12,49 @@
     {
       "tokens": 8192,
       "product": 2304,
+      "bytes_per_rank": 37748736,
       "all2all_ms": 0.302,
+      "all2all_gbps": 1000,
       "allreduce_ms": 0.182
     },
     {
       "tokens": 8192,
       "product": 5120,
+      "bytes_per_rank": 83886080,
       "all2all_ms": 0.648,
+      "all2all_gbps": 1036,
       "allreduce_ms": 0.310
     },
     {
       "tokens": 32768,
       "product": 2304,
+      "bytes_per_rank": 150994944,
       "all2all_ms": 1.181,
+      "all2all_gbps": 1023,
       "allreduce_ms": 0.477
     },
     {
       "tokens": 32768,
       "product": 5120,
+      "bytes_per_rank": 335544320,
       "all2all_ms": 2.570,
+      "all2all_gbps": 1044,
       "allreduce_ms": 1.202
     },
     {
       "tokens": 131072,
       "product": 2304,
+      "bytes_per_rank": 603979776,
       "all2all_ms": 4.601,
+      "all2all_gbps": 1050,
       "allreduce_ms": 2.239
     },
     {
       "tokens": 131072,
       "product": 5120,
+      "bytes_per_rank": 1342177280,
       "all2all_ms": 10.281,
+      "all2all_gbps": 1044,
       "allreduce_ms": 4.775
     }
   ]
