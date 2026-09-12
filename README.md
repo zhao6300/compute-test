@@ -60,6 +60,14 @@
 
 这里的 128K 按 `131072 tokens` 计算，并假设路由在 384 个 expert 上近似均匀。
 
+按 `TP=2 × EP=2` 拆分时：
+
+```bash
+./simulate_deepseek_v41_flash_moe_128k.py \
+  --tokens 131072 --tp-size 2 --ep-size 2 \
+  --json /tmp/v41_moe_128k_tp_ep.json
+```
+
 ### 4. 用 NCCL 测 EP all-to-all / TP all-reduce
 
 ```bash
@@ -74,6 +82,19 @@ timeout 120 env NCCL_COMM_ID=127.0.0.1:19810 \
 脚本会先绑定本地 GPU，再初始化 NCCL，并把本机通信约束固定到 `lo`、关闭 IB、开启阻塞等待和超时信号，避免误连远端网卡后长期挂起。
 
 在 4 张本地卡、BF16、`131072 tokens × 5120 product` 下，`all2all` 约 `10ms`，`allreduce` 约 `5ms`。
+
+同时交叉 `TP=2 × EP=2` 时可以运行：
+
+```bash
+timeout 120 env NCCL_COMM_ID=127.0.0.1:19810 \
+  /opt/venv/bin/torchrun --nproc_per_node=4 \
+  ./allreduce_and_all_to_all.py \
+  --mode tp_ep --ep-size 2 --tp-size 2 \
+  --tokens 8192 --product 5120 \
+  --iterations 2 --warmup 1 --timeout 30
+```
+
+该模式会把 `tokens` 维度切给 EP、`features` 维度切给 TP。在 4 张本地卡、BF16、`8192 tokens × 5120 features` 下，`all2all` 约 `2.6ms`，`allreduce` 约 `1.2ms`。
 
 ### 5. 构建 CUDA `vector_add`
 

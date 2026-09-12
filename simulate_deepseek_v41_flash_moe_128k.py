@@ -17,8 +17,13 @@ def format_est(value: float) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tokens", default=131072, type=int)
+    parser.add_argument("--tp-size", default=1, type=int)
+    parser.add_argument("--ep-size", default=1, type=int)
     parser.add_argument("--json", default=None)
     args = parser.parse_args()
+
+    if args.tp_size <= 0 or args.ep_size <= 0:
+        raise ValueError("tp_size and ep_size must be greater than 0")
 
     total_routes = args.tokens * NUM_EXPERTS_PER_TOK
     routed_tokens_per_expert = total_routes / N_ROUTED_EXPERTS
@@ -30,6 +35,7 @@ def main() -> int:
     expert_total_flops = expert_total_macs * 2
     total_macs = total_routes * total_macs_per_token
     total_flops = total_macs * 2
+    rank_total_flops = total_flops / (args.tp_size * args.ep_size)
 
     report = {
         "model": "DeepSeek V4.1 Flash MoE",
@@ -38,6 +44,8 @@ def main() -> int:
         "num_experts_per_tok": NUM_EXPERTS_PER_TOK,
         "hidden_size": HIDDEN_SIZE,
         "moe_intermediate_size": INTERMEDIATE_SIZE,
+        "tp_size": args.tp_size,
+        "ep_size": args.ep_size,
         "total_routes": total_routes,
         "routed_tokens_per_expert": routed_tokens_per_expert,
         "training_macs_per_token_per_expert": total_macs_per_token,
@@ -48,6 +56,8 @@ def main() -> int:
         "layer_total_macs": total_macs,
         "layer_total_flops": total_flops,
         "layer_total_tflops": total_flops / 1e12,
+        "rank_total_flops": rank_total_flops,
+        "rank_total_tflops": rank_total_flops / 1e12,
     }
 
     print("DeepSeek V4.1 Flash MoE computation for 128K-token input")
@@ -72,6 +82,13 @@ def main() -> int:
     print("whole-MoE layer compute")
     print(f"total MACs: {total_macs:,.0f}")
     print(f"total FLOPs: {total_flops:,.0f} = {total_flops / 1e12:.4f} TFLOPs")
+
+    if args.tp_size > 1 or args.ep_size > 1:
+        print()
+        print("TP/EP scaling")
+        print(f"tp_size: {args.tp_size}")
+        print(f"ep_size: {args.ep_size}")
+        print(f"rank_total_flops: {rank_total_flops:,.0f} = {rank_total_flops / 1e12:.4f} TFLOPs")
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as stream:

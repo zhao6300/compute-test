@@ -35,16 +35,6 @@ def parse_dtype(value: str) -> torch.dtype:
     }[value]
 
 
-def format_bytes(value: int) -> str:
-    if value < 1024:
-        return f"{value} B"
-    for unit in ("KiB", "MiB", "GiB", "TiB"):
-        value /= 1024
-        if value < 1024:
-            return f"{value:.2f} {unit}"
-    return f"{value:.2f} PiB"
-
-
 def set_local_nccl_defaults() -> None:
     os.environ.setdefault("NCCL_SOCKET_IFNAME", "lo")
     os.environ.setdefault("NCCL_P2P_DISABLE", "1")
@@ -56,11 +46,16 @@ def set_local_nccl_defaults() -> None:
     os.environ.setdefault("TORCH_NCCL_BLOCKING_WAIT", "1")
 
 
-def maybe_assert_invariance(args, tensor: torch.Tensor) -> None:
+def maybe_assert_invariance(
+    args: argparse.Namespace,
+    tensor: torch.Tensor,
+    group: dist.ProcessGroup,
+) -> None:
     if not args.assert_allreduce:
         return
-    gathered = [torch.empty_like(tensor) for _ in range(dist.get_world_size())]
-    dist.all_gather(gathered, tensor.contiguous())
+    group_ranks = dist.get_process_group_ranks(group)
+    gathered = [torch.empty_like(tensor) for _ in group_ranks]
+    dist.all_gather(gathered, tensor.contiguous(), group=group)
     if dist.get_rank() == 0:
         for item in gathered[1:]:
             if not torch.equal(gathered[0].float(), item.float()):
@@ -69,7 +64,13 @@ def maybe_assert_invariance(args, tensor: torch.Tensor) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=("all2all", "allreduce", "both"), default="both")
+    parser.add_argument(
+        "--mode",
+        choices=("all2all", "allreduce", "both", "tp_ep"),
+        default="both",
+    )
+    parser.add_argument("--ep-size", default=1, type=parse_size)
+    parser.add_argument("--tp-size", default=1, type=parse_size)
     parser.add_argument("--tokens", default=32768, type=parse_size)
     parser.add_argument("--product", default=8192, type=parse_size)
     parser.add_argument("--dtype", choices=("bf16", "fp16", "fp32"), default="bf16")
@@ -101,8 +102,24 @@ def main() -> int:
     dist.barrier(device_ids=[local_rank])
     dtype = parse_dtype(args.dtype)
 
-    tokens_per_rank = args.tokens // world_size
-    product = args.product // world_size
+    if args.mode == "tp_ep":
+        ep_size = args.ep_size
+        tp_size = args.tp_size
+        if world_size != ep_size * tp_size:
+            raise ValueError(
+                f"world_size={world_size} must equal ep_size={ep_size} * tp_size={tp_size}"
+            )
+        ep_rank = rank % ep_size
+        tp_rank = rank // ep_size
+        tp_group_ranks = [tp_rank * ep_size + ep_index for ep_index in range(ep_size)]
+        tp_group = dist.new_group(ranks=tp_group_ranks, backend="nccl")
+    else:
+        ep_size = world_size
+        tp_size = world_size
+        tp_group = None
+
+    tokens_per_rank = args.tokens // ep_size
+    product = args.product // tp_size
     chunk_shape = (tokens_per_rank, product)
     send_buffers = [
         torch.randn(chunk_shape, device=device, dtype=torch.float32).to(dtype)
@@ -112,7 +129,7 @@ def main() -> int:
         torch.empty_like(send_buffers[0]) for _ in range(args.in_flight)
     ]
 
-    if args.mode in ("all2all", "both"):
+    if args.mode in ("all2all", "both", "tp_ep"):
         input_list = list(send_buffers)
         output_list = list(recv_buffers)
         local_input = input_list[0].contiguous()
@@ -132,7 +149,7 @@ def main() -> int:
         elapsed_ms = start.elapsed_time(end) / args.iterations
         print(f"rank={rank} all2all_ms={elapsed_ms:.3f}")
 
-    if args.mode in ("allreduce", "both"):
+    if args.mode in ("allreduce", "both", "tp_ep"):
         allreduce_tensor = torch.randn(chunk_shape, device=device, dtype=torch.float32).to(dtype)
         for _ in range(args.warmup):
             dist.all_reduce(allreduce_tensor)
@@ -145,7 +162,11 @@ def main() -> int:
         for _ in range(args.iterations):
             dist.all_reduce(allreduce_tensor)
             torch.cuda.synchronize(device)
-            maybe_assert_invariance(args, allreduce_tensor)
+            maybe_assert_invariance(
+                args,
+                allreduce_tensor,
+                tp_group if tp_group is not None else dist.group.WORLD,
+            )
         end.record()
         torch.cuda.synchronize(device)
         elapsed_ms = start.elapsed_time(end) / args.iterations
@@ -173,6 +194,10 @@ def main() -> int:
             "iterations": args.iterations,
             "in_flight": args.in_flight,
             "assert_allreduce": bool(args.assert_allreduce),
+            "ep_size": ep_size,
+            "tp_size": tp_size,
+            "ep_rank": rank % ep_size,
+            "tp_rank": rank // ep_size,
         },
     }
 
