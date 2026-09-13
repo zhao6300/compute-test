@@ -2,6 +2,10 @@
 
 This directory turns the gathered production skill patterns into a repeatable execution loop.
 
+The source set is summarized in
+[`docs/vendor_skill_sources.md`](../docs/vendor_skill_sources.md). Use that document when adding
+new behaviors from engineering-team sources.
+
 ## Ordered skills
 
 | Phase | Skill | Primary output |
