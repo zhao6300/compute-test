@@ -14,6 +14,20 @@ This directory turns the gathered production skill patterns into a repeatable ex
 | 6 | [`verify`](verify/SKILL.md) | `VERIFY.md`, readiness evidence |
 | 7 | [`ship`](ship/SKILL.md) | `RELEASE.md`, deploy/rollback path |
 
+## Module skills
+
+When the plan names the target modules, use the specialist skills during phases 2–5:
+
+| Module | Skill | Extra quality focus |
+| --- | --- | --- |
+| UI / frontend | [`modules/frontend/SKILL.md`](modules/frontend/SKILL.md) | usable states, accessibility, performance, responsive behavior |
+| Backend service | [`modules/backend/SKILL.md`](modules/backend/SKILL.md) | contracts, failures, observability, resource safety |
+| Data / storage | [`modules/data/SKILL.md`](modules/data/SKILL.md) | schema ownership, migrations, integrity, rollback |
+| External API | [`modules/api/SKILL.md`](modules/api/SKILL.md) | versioning, validation, authz, rate limits |
+| Operations | [`modules/ops/SKILL.md`](modules/ops/SKILL.md) | deploy, rollback, health, runbooks, alerts |
+
+Module skills do not replace the ordered phase skills; they constrain what a slice must include.
+
 ## Execution rules
 
 1. Execute the phases in order unless the user changes scope.
