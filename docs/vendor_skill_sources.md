@@ -35,3 +35,51 @@ pattern library mapped to an existing phase or module skill in this repository.
 2. Every borrowed behavior must become a check, artifact, command, or failure protocol.
 3. Keep skills concise; link a source only when it adds a pattern not already encoded.
 4. Before claiming readiness, run the phase's verification command; a reference repo does not prove your code works.
+
+## Corresponding slices
+
+The production loop remains anchored to seven persistent phase slices. Each slice
+is deliberately non-reproducible and should remain separated in memory rather than
+hidden inside a one-shot prompt.
+
+### Spec
+
+- Purpose: freeze the core user action and the minimum behavior change.
+- Current source: [`skills/spec/SKILL.md`](../skills/spec/SKILL.md).
+- Vendor inspiration: `google/skills`, `microsoft/skills`.
+
+### Plan
+
+- Purpose: turn the product loop into bounded implementation and data-work slices.
+- Current source: [`skills/plan/SKILL.md`](../skills/plan/SKILL.md).
+- Vendor inspiration: `microsoft/hve-core`, `boshu2/agentops`.
+
+### Implementation
+
+- Purpose: produce a narrow, reviewable, state-changing slice with failures handled.
+- Current source: [`skills/implement/SKILL.md`](../skills/implement/SKILL.md).
+- Vendor inspiration: `danielvm-git/bigpowers`, `google/agents-cli`.
+
+### Test
+
+- Purpose: prove acceptance, failure, authorization, and regression behavior.
+- Current source: [`skills/test/SKILL.md`](../skills/test/SKILL.md).
+- Vendor inspiration: `NVIDIA/SkillEvaluator`, `mhattingpete/claude-skills-marketplace`.
+
+### Review
+
+- Purpose: inspect the diff and visible UX with knowledge the implementer did not have.
+- Current source: [`skills/review/SKILL.md`](../skills/review/SKILL.md).
+- Vendor inspiration: `google/mantis`, `boshu2/agentops`.
+
+### Verify
+
+- Purpose: collect a complete launch/readiness evidence trail, not just tests.
+- Current source: [`skills/verify/SKILL.md`](../skills/verify/SKILL.md).
+- Vendor inspiration: `NVIDIA/SkillEvaluator`, `addxai/enterprise-harness-engineering`.
+
+### Ship
+
+- Purpose: release behind an externally callable rollback/audit path, then collect adoption evidence.
+- Current source: [`skills/ship/SKILL.md`](../skills/ship/SKILL.md).
+- Vendor inspiration: `Stanshy/AgentHub`, `google/agents-cli`.
