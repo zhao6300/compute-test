@@ -24,6 +24,7 @@
 | `flashinfer_attention_demo.py` | FlashInfer attention 的小型演示/benchmark |
 | `kv_cache_metrics.py` | 从 vLLM `/metrics` 读取 KV cache 与 prefix cache 指标 |
 | `Makefile` / `vector_add.cu` | CUDA `vector_add` 小样例，`make` 可构建 |
+| `cuda_graph_test.cu` | 验证 CUDA Graph 与普通 stream launch 的结果，并输出两者 batch 耗时 |
 
 ## 环境
 
@@ -101,6 +102,22 @@ timeout 120 env NCCL_COMM_ID=127.0.0.1:19810 \
 ```bash
 make
 ```
+
+窄验证可以复用构建产物：
+
+```bash
+make check
+```
+
+### 6. 测试 CUDA Graph 与普通 launch
+
+```bash
+make cuda_graph_test
+./cuda_graph_test --count 8192 --launches 8 --iterations 24
+```
+
+该测试先验证普通 stream launch 与 CUDA Graph replay 的输出，再按同一批
+8 个 kernel launch 比较 stream batch 和 graph batch 耗时。
 
 ## 多尺寸 NCCL 基线
 

@@ -1,13 +1,20 @@
 NVCC      := nvcc
 NVCCFLAGS := -O3 -arch=native
-TARGET    := vector_add
+TARGETS   := vector_add cuda_graph_test
 
-all: $(TARGET)
+all: $(TARGETS)
 
-$(TARGET): vector_add.cu
+vector_add: vector_add.cu
+	$(NVCC) $(NVCCFLAGS) -o $@ $< -lm
+
+cuda_graph_test: cuda_graph_test.cu
 	$(NVCC) $(NVCCFLAGS) -o $@ $< -lm
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGETS)
 
-.PHONY: all clean
+check: $(TARGETS)
+	./vector_add 6144 200
+	./cuda_graph_test --count 8192 --launches 8 --iterations 24
+
+.PHONY: all clean check
